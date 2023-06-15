@@ -35,7 +35,7 @@ class KidneyDataset(Dataset):
             # case, patch_id = self.image_dataset[idx].split('_')
             f = h5py.File(case, "r")
             img = f['imgs'][int(patch_id)]
-            # img = Image.fromarray(f['imgs'][int(patch_id)])
+            # img = Image.fromarray(img)
             # img = torch.from_numpy(img)
 
             # case, patch_id = self.image_dataset[idx].split('\t')
@@ -101,12 +101,14 @@ if __name__=="__main__":
 
     transform_train = transforms.Compose([
         transforms.ToTensor(),
-        transforms.ColorJitter(),
+        transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.05),
+        transforms.RandomGrayscale(p=0.1),
         transforms.RandomResizedCrop(input_size, scale=(input_size/patch_size, 1.0), interpolation=InterpolationMode.BICUBIC),  # 3 is bicubic
+
         # transforms.RandomHorizontalFlip(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
-    batch_size = 32
+    batch_size = 16
 
 
 
@@ -116,12 +118,14 @@ if __name__=="__main__":
     ])
 
     transform_colorjitter = transforms.Compose([
-        transforms.ColorJitter(),
+        transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.05),
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
 
+    # minscale = input_size/patch_size
+    minscale = 0.2
     transform_randomresizedcrop = transforms.Compose([
-        transforms.RandomResizedCrop(input_size, scale=(input_size/patch_size, 1.0), interpolation=InterpolationMode.BICUBIC),
+        transforms.RandomResizedCrop(input_size, scale=(minscale, 1.0), interpolation=InterpolationMode.BICUBIC),
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
 
@@ -133,14 +137,14 @@ if __name__=="__main__":
 
     transform_all = transforms.Compose([
         transforms.ColorJitter(),
-        transforms.RandomResizedCrop(input_size, scale=(input_size/patch_size, 1.0), interpolation=InterpolationMode.BICUBIC),
+        transforms.RandomResizedCrop(input_size, scale=(minscale, 1.0), interpolation=InterpolationMode.BICUBIC),
         transforms.RandomHorizontalFlip(),
         # transforms.RandomVerticalFlip(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
 
     # dataset_train = datasets.ImageFolder(os.path.join(args.data_path, 'train'), transform=transform_train)
-    dataset_train = KidneyDataset(data_path, transform_none)
+    dataset_train = KidneyDataset(data_path, transform_train)
 
 
     if distributed:
@@ -185,6 +189,11 @@ if __name__=="__main__":
             img_randomflip = transform_randomflip(img)
             img_all = transform_all(img)
 
+            # crops = []
+            # for i in range(4):
+            #     crop = transform_randomresizedcrop(img)
+            #     crops.append(crop)
+
 
             # img = transform_tensor_to_pil(img)
             # img.show()
@@ -207,8 +216,20 @@ if __name__=="__main__":
             plt.subplot(1, 5, 5)
             show_image(img_all, unnormalize=True, title="all")
 
-            # plt.show()
-            plt.savefig(os.path.join(out_dir, f"batch{i}_0.png"))
+            # plt.subplot(1, 5, 2)
+            # show_image(crops[0], unnormalize=True, title="crop1")
+            #
+            # plt.subplot(1, 5, 3)
+            # show_image(crops[1], unnormalize=True, title="crop2")
+            #
+            # plt.subplot(1, 5, 4)
+            # show_image(crops[2], unnormalize=True, title="crop3")
+            #
+            # plt.subplot(1, 5, 5)
+            # show_image(crops[3], unnormalize=True, title="crop4")
+
+            plt.show()
+            # plt.savefig(os.path.join(out_dir, f"batch{i}_0.png"))
 
         #print(samples)
         if i == 500:

@@ -36,6 +36,10 @@ def get_shared_folder() -> Path:
         p = Path(f"/checkpoint/{user}/experiments")
         p.mkdir(exist_ok=True)
         return p
+    if Path("/exports/path-nefro-hpc/").is_dir():
+        p = Path(f"/exports/path-nefro-hpc/{user}/experiments")
+        p.mkdir(exist_ok=True)
+        return p
     raise RuntimeError("No shared folder available")
 
 

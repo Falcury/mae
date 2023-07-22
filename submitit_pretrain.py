@@ -38,7 +38,7 @@ def parse_args():
 def get_shared_folder() -> Path:
     user = os.getenv("USER")
     # Snellius
-    if Path("/exports/path-nefro-hpc/").is_dir():
+    if Path("/gpfs/work1/0/einf2634/").is_dir():
         p = Path(f"/gpfs/work1/0/einf2634/{user}/experiments")
         p.mkdir(exist_ok=True)
         return p

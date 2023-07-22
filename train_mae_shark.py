@@ -190,8 +190,7 @@ def main(args):
 
     # simple augmentation
     transform_train = transforms.Compose([
-            transforms.ColorJitter(),
-            transforms.RandomResizedCrop(args.input_size, scale=(0.5, 1.0), interpolation=3),  # 3 is bicubic
+            transforms.RandomResizedCrop(args.input_size, scale=(0.5, 1.0), interpolation=transforms.InterpolationMode.BICUBIC),  # 3 is bicubic
             transforms.RandomHorizontalFlip(),
             transforms.RandomVerticalFlip(),
             transforms.ToTensor(),

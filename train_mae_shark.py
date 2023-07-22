@@ -28,11 +28,15 @@ import logging
 os.environ['MASTER_ADDR'] = 'localhost'
 os.environ['MASTER_PORT'] = '8023'
 class KidneyDataset(Dataset):
-    def __init__(self, data_path, transform=None):
+    def __init__(self, data_path, transform=None, csv_path=None):
         self.transform = transform
         self.is_initialized = False
         self.image_dataset = []
-        self._load_h5(data_path)
+        self.filenames = []
+        if csv_path is None:
+            self._load_h5(data_path)
+        else:
+            self._load_csv(csv_path)
         self.data_length = len(self.image_dataset)
         self.data_path = data_path
 
@@ -74,14 +78,28 @@ class KidneyDataset(Dataset):
         for root,dirs,files in os.walk(data_path):
             for every_file in files:
                 try:
-                    f = h5py.File(root+every_file, "r")
+                    full_filename = os.path.join(root, every_file)
+                    f = h5py.File(full_filename, "r")
+                    self.filenames.append(full_filename)
                     # file_name, file_type = os.path.splitext(every_file)
                     for i in range(len(f['imgs'])):
-                        self.image_dataset.append(root+every_file+"_%d"%(i)) 
+                        self.image_dataset.append(full_filename+"_%d"%(i))
                 except Exception as e:
                     logging.warning(
                         f"Couldn't load: {every_file}. Exception: \n{e}"
                     )
+        self.is_initialized = True
+
+    def _load_csv(self, csv_path):
+        with open(csv_path, "r") as csv:
+            for line in csv:
+                line = line.rstrip()
+                cols = line.split(",")
+                filename = cols[0]
+                num_imgs = int(cols[1])
+                self.filenames.append(filename)
+                for i in range(num_imgs):
+                    self.image_dataset.append(filename + "_%d" % (i))
         self.is_initialized = True
 
 def get_args_parser():
@@ -123,6 +141,8 @@ def get_args_parser():
     # Dataset parameters
     parser.add_argument('--data_path', default='/exports/path-nefro-hpc/PATCHES_LANCET/TRAIN/', type=str,
                         help='dataset path')
+    parser.add_argument('--csv_path', type=str, default=None,
+                        help='optional .csv file with h5 files (filename,patch_count) to speed up dataset initialization')
 
     parser.add_argument('--output_dir', default='/exports/path-nefro-hpc/jli/mae_results/',
                         help='path where to save, empty for no saving')
@@ -177,7 +197,7 @@ def main(args):
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
     # dataset_train = datasets.ImageFolder(os.path.join(args.data_path, 'train'), transform=transform_train)
-    dataset_train = KidneyDataset(args.data_path, transform_train)
+    dataset_train = KidneyDataset(args.data_path, transform_train, args.csv_path)
     print(dataset_train)
 
     if True:  # args.distributed:

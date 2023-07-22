@@ -27,6 +27,11 @@ def parse_args():
     parser.add_argument("--partition", default="learnfair", type=str, help="Partition where to submit")
     parser.add_argument("--use_volta32", action='store_true', help="Request 32G V100 GPUs")
     parser.add_argument('--comment', default="", type=str, help="Comment to pass to scheduler")
+
+    parser.add_argument('--mail-user', type=str, help='email user about job state changes (as specified by --mail-type)')
+    parser.add_argument('--mail-type', type=str, default='ALL', help='select job event types for email notification')
+    parser.add_argument('--apply-snellius-nccl-fix', action='store_true',
+                         help='sets NCCL_SOCKET_IFNAME=eno1np0 as a workaround for hang during multi-GPU init')
     return parser.parse_args()
 
 

@@ -12,15 +12,15 @@ import os
 import uuid
 from pathlib import Path
 
-import main_pretrain as trainer
+import train_mae_shark as trainer
 import submitit
 
 
 def parse_args():
     trainer_parser = trainer.get_args_parser()
     parser = argparse.ArgumentParser("Submitit for MAE pretrain", parents=[trainer_parser])
-    parser.add_argument("--ngpus", default=8, type=int, help="Number of gpus to request on each node")
-    parser.add_argument("--nodes", default=2, type=int, help="Number of nodes to request")
+    parser.add_argument("--ngpus", default=4, type=int, help="Number of gpus to request on each node")
+    parser.add_argument("--nodes", default=4, type=int, help="Number of nodes to request")
     parser.add_argument("--timeout", default=4320, type=int, help="Duration of the job")
     parser.add_argument("--job_dir", default="", type=str, help="Job dir. Leave empty for automatic.")
 
@@ -32,14 +32,22 @@ def parse_args():
 
 def get_shared_folder() -> Path:
     user = os.getenv("USER")
-    if Path("/checkpoint/").is_dir():
-        p = Path(f"/checkpoint/{user}/experiments")
+    # Snellius
+    if Path("/exports/path-nefro-hpc/").is_dir():
+        p = Path(f"/gpfs/work1/0/einf2634/{user}/experiments")
         p.mkdir(exist_ok=True)
         return p
+    # Shark
     if Path("/exports/path-nefro-hpc/").is_dir():
         p = Path(f"/exports/path-nefro-hpc/{user}/experiments")
         p.mkdir(exist_ok=True)
         return p
+    # Default
+    if Path("/checkpoint/").is_dir():
+        p = Path(f"/checkpoint/{user}/experiments")
+        p.mkdir(exist_ok=True)
+        return p
+
     raise RuntimeError("No shared folder available")
 
 
@@ -107,12 +115,12 @@ def main():
         kwargs['slurm_comment'] = args.comment
 
     executor.update_parameters(
-        mem_gb=40 * num_gpus_per_node,
-        gpus_per_node=num_gpus_per_node,
+        # mem_gb=40 * num_gpus_per_node,
+        # gpus_per_node=num_gpus_per_node,
         tasks_per_node=num_gpus_per_node,  # one task per GPU
-        cpus_per_task=10,
+        cpus_per_task=18,
         nodes=nodes,
-        timeout_min=timeout_min,  # max is 60 * 72
+        timeout_min=timeout_min,  # max is 60 * 24 * 5
         # Below are cluster dependent parameters
         slurm_partition=partition,
         slurm_signal_delay_s=120,
@@ -120,6 +128,23 @@ def main():
     )
 
     executor.update_parameters(name="mae")
+
+    if args.mail_user and args.mail_type:
+        executor.update_parameters(
+            slurm_additional_parameters={
+                'mail-user': args.mail_user,
+                'mail-type': args.mail_type}
+        )
+
+    # NOTE(pvalkema) Workaround for known issue on Snellius:
+    # https://servicedesk.surf.nl/wiki/display/WIKI/Snellius+known+issues
+    if args.apply_snellius_nccl_fix:
+        print("applying NCCL fix for Snellius: export NCCL_SOCKET_IFNAME=eno1np0")
+        executor.update_parameters(
+            slurm_setup=["""export NCCL_SOCKET_IFNAME=eno1np0""", ]
+        )
+
+
 
     args.dist_url = get_init_file().as_uri()
     args.output_dir = args.job_dir

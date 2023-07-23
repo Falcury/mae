@@ -70,7 +70,7 @@ class Trainer(object):
         self.args = args
 
     def __call__(self):
-        import main_pretrain as trainer
+        import train_mae_shark as trainer
 
         self._setup_gpu_args()
         trainer.main(self.args)

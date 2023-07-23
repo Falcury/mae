@@ -27,6 +27,9 @@ from PIL import Image
 import logging
 os.environ['MASTER_ADDR'] = 'localhost'
 os.environ['MASTER_PORT'] = '8023'
+
+import tqdm
+
 class KidneyDataset(Dataset):
     def __init__(self, data_path, transform=None, csv_path=None):
         self.transform = transform
@@ -34,8 +37,10 @@ class KidneyDataset(Dataset):
         self.image_dataset = []
         self.filenames = []
         if csv_path is None:
+            print("Loading dataset from folder containing h5 files...")
             self._load_h5(data_path)
         else:
+            print("Loading dataset from csv file...")
             self._load_csv(csv_path)
         self.data_length = len(self.image_dataset)
         self.data_path = data_path
@@ -76,7 +81,7 @@ class KidneyDataset(Dataset):
 
     def _load_h5(self, data_path):
         for root,dirs,files in os.walk(data_path):
-            for every_file in files:
+            for every_file in tqdm.tqdm(files):
                 try:
                     full_filename = os.path.join(root, every_file)
                     f = h5py.File(full_filename, "r")
@@ -189,6 +194,7 @@ def main(args):
     cudnn.benchmark = True
 
     # simple augmentation
+    print("Creating training transforms...")
     transform_train = transforms.Compose([
             transforms.RandomResizedCrop(args.input_size, scale=(0.5, 1.0), interpolation=transforms.InterpolationMode.BICUBIC),  # 3 is bicubic
             transforms.RandomHorizontalFlip(),
@@ -196,6 +202,7 @@ def main(args):
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
     # dataset_train = datasets.ImageFolder(os.path.join(args.data_path, 'train'), transform=transform_train)
+    print("Loading dataset...")
     dataset_train = KidneyDataset(args.data_path, transform_train, args.csv_path)
     print(dataset_train)
 

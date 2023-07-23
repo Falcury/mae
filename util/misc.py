@@ -242,9 +242,12 @@ def init_distributed_mode(args):
     args.dist_backend = 'nccl'
     print('| distributed init (rank {}): {}, gpu {}'.format(
         args.rank, args.dist_url, args.gpu), flush=True)
+    print("Initializing process group...")
     torch.distributed.init_process_group(backend=args.dist_backend, init_method=args.dist_url,
                                          world_size=args.world_size, rank=args.rank)
+    print("Synchronizing processes...")
     torch.distributed.barrier()
+    print("Disabling printing when not in master process...")
     setup_for_distributed(args.rank == 0)
 
 

@@ -26,8 +26,8 @@ import h5py
 from torch.utils.data import Dataset, DataLoader
 from PIL import Image
 import logging
-os.environ['MASTER_ADDR'] = 'localhost'
-os.environ['MASTER_PORT'] = '8023'
+# os.environ['MASTER_ADDR'] = 'localhost'
+# os.environ['MASTER_PORT'] = '8023'
 
 import tqdm
 
@@ -159,6 +159,8 @@ def get_args_parser():
     parser.add_argument('--seed', default=0, type=int)
     parser.add_argument('--resume', default='',
                         help='resume from checkpoint')
+    parser.add_argument('--resume_only_load_weights', action='store_true',
+                        help="initialize weights from checkpoint, but don't resume with epoch and optimizer settings")
 
     parser.add_argument('--start_epoch', default=0, type=int, metavar='N',
                         help='start epoch')
